@@ -1,29 +1,18 @@
 import SwiftUI
 import UserNotifications
 
-
-//struct Departure: Decodable {
-//    let label: String
-//    let realtimeDepartureTime: String
-//
-//    enum CodingKeys: String, CodingKey {
-//        case label = "label"
-//        case realtimeDepartureTime = "realtimeDepartureTime"
-//    }
-//}
-
 struct Departure: Codable {
     //    let bannerHash: String
     //    let cancelled: Int
     //    let delayInMinutes: Int
-        let destination: String
+    let destination: String
     let label: String
     //    let messages: [String]
     //    let network: String
     //    let occupancy: String
     //    let plannedDepartureTime: Int
     //    let realtime: Int
-        let realtimeDepartureTime: Int
+    let realtimeDepartureTime: Int
     //    let sev: Int
     //    let stopPointGlobalId: String
     //    let trainType: String
@@ -34,29 +23,12 @@ struct Departure: Codable {
 struct mvg1App: App {
     // 1
     @State var currentNumber: String = "1"
-    @State var departures: [Departure] = []
     
-    func fetchDepartures(completion: @escaping ([Departure]?) -> Void) {
-        guard let url = URL(string: "https://www.mvg.de/api/fib/v2/departure?globalId=de:09162:1464&limit=10&offsetInMinutes=0&transportTypes=BUS") else {
-            completion(nil)
-            return
-        }
-        
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            if let data = data {
-                let decoder = JSONDecoder()
-                do {
-                    let departures = try decoder.decode([Departure].self, from: data)
-                    completion(departures)
-                } catch {
-                    completion(nil)
-                }
-            } else if let error = error {
-                print(error.localizedDescription)
-                completion(nil)
-            }
-        }
-        task.resume()
+    func getFormattedDate(timestamp: Int) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(timestamp/1000))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return formatter.string(from: date)
     }
     
     var body: some Scene {
@@ -82,16 +54,12 @@ struct mvg1App: App {
                             do {
                                 let departures = try decoder.decode([Departure].self, from: data)
                                 let aidenbachDepartures = departures.filter { $0.destination == "Aidenbachstraße" }
-
+                                
                                 
                                 if let departure = aidenbachDepartures.first {
                                     // Set the notification content
                                     let content = UNMutableNotificationContent()
-                                    let timestamp = departure.realtimeDepartureTime
-                                    let date = Date(timeIntervalSince1970: TimeInterval(timestamp/1000))
-                                    let formatter = DateFormatter()
-                                    formatter.dateFormat = "HH:mm:ss"
-                                    let dateString = formatter.string(from: date)
+                                    let dateString = getFormattedDate( timestamp: departure.realtimeDepartureTime)
                                     content.title = "Bus Departure"
                                     content.body = "The next bus \(departure.label) is leaving at \(dateString) from \(departure.label)"
                                     content.sound = UNNotificationSound.default
