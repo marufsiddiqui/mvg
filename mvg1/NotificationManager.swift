@@ -22,22 +22,17 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
     
     func scheduleNotification() {
-        let content = UNMutableNotificationContent()
-        content.title = "API Call Notification"
-        content.body = "API call will be made now!"
-        
+        let calendar = Calendar(identifier: .gregorian)
         var dateComponents = DateComponents()
-        dateComponents.hour = 00
-        dateComponents.minute = 35
+        dateComponents.hour = 01 // 2 PM
+        dateComponents.minute = 11
+        dateComponents.second = 00
+        let date = calendar.date(from: dateComponents)!
         
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: IDENTIFIER, content: content, trigger: trigger)
-        
-        notificationCenter.add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error)")
-            }
+        let timer = Timer(fire: date, interval: 86400, repeats: true) { _ in // fire at 2 PM every day
+            self.makeAPICall()
         }
+        RunLoop.main.add(timer, forMode: .common)
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
