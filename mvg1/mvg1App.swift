@@ -24,6 +24,43 @@ struct mvg1App: App {
     // 1
     @State var currentNumber: String = "1"
     
+    func fetchDepartures(completion: @escaping ([Departure]?) -> Void) {
+        let url = URL(string: "https://www.mvg.de/api/fib/v2/departure?globalId=de:09162:1464&limit=10&offsetInMinutes=0&transportTypes=BUS")!
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                let decoder = JSONDecoder()
+                do {
+                    let departures = try decoder.decode([Departure].self, from: data)
+                    completion(departures)
+                } catch {
+                    print("Error decoding data: \(error.localizedDescription)")
+                    completion(nil)
+                }
+            } else if let error = error {
+                print("Error: \(error.localizedDescription)")
+                completion(nil)
+            }
+        }
+        task.resume()
+    }
+    
+    func createNotification(for departure: Departure) {
+        let notificationCenter = UNUserNotificationCenter.current()
+        let content = UNMutableNotificationContent()
+        let dateString = getFormattedDate(timestamp: departure.realtimeDepartureTime)
+        content.title = "Bus Departure"
+        content.body = "The next bus \(departure.label) is leaving at \(dateString) from \(departure.label)"
+        content.sound = UNNotificationSound.default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        notificationCenter.add(request) { error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+            } else {
+                print("Notification sent!")
+            }
+        }
+    }
+    
     func getFormattedDate(timestamp: Int) -> String {
         let date = Date(timeIntervalSince1970: TimeInterval(timestamp/1000))
         let formatter = DateFormatter()
@@ -37,7 +74,6 @@ struct mvg1App: App {
                 .onAppear {
                     let notificationCenter = UNUserNotificationCenter.current()
                     
-                    // Request permission to display notifications
                     notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                         if granted {
                             print("Notification permission granted")
@@ -46,41 +82,12 @@ struct mvg1App: App {
                         }
                     }
                     
-                    // Make an API call to retrieve data from https://rickandmortyapi.com/api/character/158
-                    let url = URL(string: "https://www.mvg.de/api/fib/v2/departure?globalId=de:09162:1464&limit=10&offsetInMinutes=0&transportTypes=BUS")!
-                    let task = URLSession.shared.dataTask(with: url) { data, response, error in
-                        if let data = data {
-                            let decoder = JSONDecoder()
-                            do {
-                                let departures = try decoder.decode([Departure].self, from: data)
-                                let aidenbachDepartures = departures.filter { $0.destination == "Aidenbachstraße" }
-                                
-                                
-                                if let departure = aidenbachDepartures.first {
-                                    // Set the notification content
-                                    let content = UNMutableNotificationContent()
-                                    let dateString = getFormattedDate( timestamp: departure.realtimeDepartureTime)
-                                    content.title = "Bus Departure"
-                                    content.body = "The next bus \(departure.label) is leaving at \(dateString) from \(departure.label)"
-                                    content.sound = UNNotificationSound.default
-                                    // Set the notification request
-                                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                                    notificationCenter.add(request) { error in
-                                        if let error = error {
-                                            print("Error: \(error.localizedDescription)")
-                                        } else {
-                                            print("Notification sent!")
-                                        }
-                                    }
-                                }
-                            } catch {
-                                print("Error decoding data: \(error.localizedDescription)")
-                            }
-                        } else if let error = error {
-                            print("Error: \(error.localizedDescription)")
-                        }
+                    fetchDepartures { departures in
+                        guard let aidenbachDepartures = departures?.filter({ $0.destination == "Aidenbachstraße" }),
+                              let departure = aidenbachDepartures.first
+                        else { return }
+                        createNotification(for: departure)
                     }
-                    task.resume()
                 }
         }
         
