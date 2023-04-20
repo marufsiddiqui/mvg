@@ -1,9 +1,22 @@
 import Foundation
 
-//struct Departure: Decodable {
-//    let label: String
-//    let realtimeDepartureTime: String
-//}
+struct Departure: Codable {
+    //    let bannerHash: String
+    //    let cancelled: Int
+    //    let delayInMinutes: Int
+    let destination: String
+    let label: String
+    //    let messages: [String]
+    //    let network: String
+    //    let occupancy: String
+    //    let plannedDepartureTime: Int
+    //    let realtime: Int
+    let realtimeDepartureTime: Int
+    //    let sev: Int
+    //    let stopPointGlobalId: String
+    //    let trainType: String
+    //    let transportType: String
+}
 //
 //class Api {
 //    static func fetchDepartures() async -> [Departure] {
