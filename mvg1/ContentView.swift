@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  mvg1
-//
-//  Created by Maruf Siddiqui on 20.04.23.
-//
-
 import SwiftUI
 
 struct ContentView: View {
